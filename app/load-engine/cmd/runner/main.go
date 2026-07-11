@@ -4,18 +4,18 @@ import (
 	"fmt"
 	
 	"github.com/gabriellim314/loadforge/app/load-engine/internal/httpclient"
+	"github.com/gabriellim314/loadforge/app/load-engine/internal/metrics"
 )
 
 func main() {
 
 	client := httpclient.New("http://localhost:8000/health")
-	result := client.SendRequest()
+    collector := metrics.New()
 
-	if result.Error != nil {
-		fmt.Println("Request failed:", result.Error)
-		return
+	for i :=0; i < 100; i++ {
+		result := client.SendRequest()
+		collector.Add(result)
 	}
 
-	fmt.Println("Status:", result.StatusCode)
-	fmt.Println("Latency:", result.Latency)
+	fmt.Println(collector.Report())
 }
