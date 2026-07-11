@@ -2,25 +2,20 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"time"
+	
+	"github.com/gabriellim314/loadforge/app/load-engine/internal/httpclient"
 )
 
 func main() {
 
-	start := time.Now()
+	client := httpclient.New("http://localhost:8000/health")
+	result := client.SendRequest()
 
-	resp, err := http.Get("http://localhost:8000/health")
-
-	duration := time.Since(start)
-
-	if err != nil {
-		fmt.Println("Request failed:", err)
+	if result.Error != nil {
+		fmt.Println("Request failed:", result.Error)
 		return
 	}
 
-	defer resp.Body.Close()
-
-	fmt.Println("Status:", resp.Status)
-	fmt.Println("Latency:", duration)
+	fmt.Println("Status:", result.StatusCode)
+	fmt.Println("Latency:", result.Latency)
 }
