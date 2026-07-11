@@ -269,7 +269,7 @@ Average latency:
 * [x] HTTP requests
 * [x] Latency measurement
 * [ ] Concurrent workers
-* [ ] Metrics collector
+* [x] Metrics collector
 
 ## Phase 2 — Advanced Load Testing
 
