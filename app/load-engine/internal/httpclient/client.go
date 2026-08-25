@@ -1,6 +1,7 @@
 package httpclient
 
 import (
+	"context"
 	"net/http"
 	"time"
 )
@@ -8,6 +9,7 @@ import (
 // HTTPClient is a struct that represents the HTTP client
 type HTTPClient struct {
 	URL string
+	Client *http.Client
 }
 
 // Result contains the outcome of a single HTTP request
@@ -18,13 +20,18 @@ type Result struct {
 }
 
 func New(url string) *HTTPClient {
-	return &HTTPClient{URL: url}
+	return &HTTPClient{URL: url, Client: &http.Client{}}
 } 
 
-func (client *HTTPClient) SendRequest() Result {
+func (client *HTTPClient) SendRequest(ctx context.Context) Result {
 
 	start := time.Now()
-	resp, err := http.Get(client.URL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, client.URL, nil)
+	if err != nil {
+		return Result{Error: err}
+	}
+
+	resp, err := client.Client.Do(req)
 	duration := time.Since(start)
 
     if err != nil {

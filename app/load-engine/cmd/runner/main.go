@@ -3,18 +3,23 @@ package main
 import (
 	"fmt"
 	
-	"github.com/gabriellim314/loadforge/app/load-engine/internal/httpclient"
 	"github.com/gabriellim314/loadforge/app/load-engine/internal/metrics"
+	"github.com/gabriellim314/loadforge/app/load-engine/internal/worker"
 )
 
 func main() {
 
-	client := httpclient.New("http://localhost:8000/health")
     collector := metrics.New()
 
-	for i :=0; i < 100; i++ {
-		result := client.SendRequest()
-		collector.Add(result)
+	err := worker.Run(worker.Config{
+		URL: "http://localhost:8000/health",
+		Concurrency: 10,
+		TotalRequests: 100,
+	}, collector)
+
+	if err != nil {
+		fmt.Printf("Error running worker: %v\n", err)
+		return
 	}
 
 	fmt.Println(collector.Report())

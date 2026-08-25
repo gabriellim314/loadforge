@@ -1,324 +1,194 @@
 # LoadForge
 
-**A lightweight, developer-friendly load testing platform built from scratch in Go.**
+**A lightweight load testing platform built from scratch in Go.**
 
-LoadForge is an open-source load testing tool designed to simulate traffic, measure system performance, and provide meaningful insights about application behavior under different workloads.
-
-The goal of LoadForge is to provide a simple yet powerful alternative for developers who want to understand how their systems behave under pressure, while exploring concepts such as concurrency, distributed systems, networking, and performance engineering.
+LoadForge simulates HTTP traffic, measures performance, and helps you understand how an API behaves under load. The project is intentionally built in stages — starting with a solid single-worker engine before any distributed architecture.
 
 ---
 
-## 🚀 Features
+## Current status — Stage 1 (MVP)
 
-### Current
+Focus: **one reliable load engine**, not Kubernetes, queues, or multiple workers yet.
 
-* ✅ HTTP load generation
-* ✅ Target API simulation environment
-* ✅ Request latency measurement
-* ✅ Success and failure tracking
-* ✅ Concurrent request execution using Go routines
+```
+Frontend          →  🔴 not started
+Backend (API)     →  🔴 not started
+Load Engine       →  🟡 working (CLI runner + worker)
+Target API        →  ✅ minimal /health server
+```
 
-### In Development
+### Working today
 
-* 🔄 Virtual users simulation
-* 🔄 Requests per second (RPS) control
-* 🔄 Configurable load scenarios
-* 🔄 Performance reports
-* 🔄 Real-time monitoring dashboard
-* 🔄 Distributed load generation
+* ✅ Target API (`GET /health` on `:8000`)
+* ✅ Concurrent load generation (goroutine pool + concurrency limit)
+* ✅ Per-request timeout via `context.Context`
+* ✅ Shared `http.Client`
+* ✅ Thread-safe metrics (`sync.Mutex`)
+* ✅ Metrics:
+  * total / successful / failed requests
+  * success rate
+  * average latency
+  * status code distribution
+  * test duration (wall clock)
+  * RPS
+
+### Not yet
+
+* 🔴 Percentiles (p50 / p95 / p99)
+* 🔴 CLI flags (URL, count, concurrency still hardcoded in the runner)
+* 🔴 Duration-based tests (only total request count)
+* 🔴 Backend control API
+* 🔴 Result persistence / database
+* 🔴 Frontend dashboard
+* ⚪ Docker / Kubernetes / RabbitMQ (planned for later stages)
 
 ---
 
-# 🏗️ Architecture
-
-LoadForge is divided into two main components:
+## Architecture (today)
 
 ```
 loadforge/
-│
 ├── app/
-│   │
-│   ├── target-api/
-│   │   └── A sample HTTP service used as a load testing target
-│   │
-│   └── load-engine/
-│       └── The engine responsible for generating traffic
-│
+│   ├── target-api/          # sample HTTP target
+│   │   └── cmd/server
+│   └── load-engine/         # load generator
+│       ├── cmd/runner       # CLI entrypoint
+│       └── internal/
+│           ├── httpclient/  # HTTP + context timeout
+│           ├── metrics/     # aggregation + report
+│           └── worker/      # concurrency-limited execution
+├── docs/architecture/
 └── go.mod
 ```
 
-## Target API
-
-The target API is a simple Go HTTP server that provides endpoints for testing.
-
-Example:
-
 ```
-GET /health
+runner
+  └── worker (concurrency N)
+        └── httpclient  ──HTTP──►  target-api :8000
+              │
+              └── metrics.Add(...) → Report() on stdout
 ```
 
-Response:
-
-```
-200 OK
-
-OK
-```
-
-This allows LoadForge to test real HTTP communication patterns.
+There is **no** control API, queue, or frontend yet. Communication is plain HTTP between the engine and the target.
 
 ---
 
-## Load Engine
+## Getting started
 
-The Load Engine is the core of LoadForge.
-
-It is responsible for:
-
-* Creating HTTP requests
-* Controlling traffic generation
-* Measuring response times
-* Collecting performance metrics
-
-Example workflow:
-
-```
-                 HTTP Requests
-
-+-------------+ ---------------> +-------------+
-| LoadForge   |                  | Target API  |
-| Engine      | <--------------- |             |
-+-------------+    Responses     +-------------+
-
-        |
-        |
-        v
-
-Performance Metrics
-
-- Requests per second
-- Average latency
-- Error rate
-- Percentiles
-```
-
----
-
-# 🧠 Engineering Concepts
-
-LoadForge is built to explore and implement real-world backend engineering concepts.
-
-## Concurrency
-
-Go routines are used to simulate multiple users accessing a system simultaneously.
-
-Example:
-
-```
-Virtual User 1 ───┐
-Virtual User 2 ───┤
-Virtual User 3 ───┼──> API
-Virtual User 4 ───┘
-```
-
-This allows realistic workload simulation.
-
----
-
-## Performance Metrics
-
-LoadForge tracks important performance indicators:
-
-### Latency
-
-The time required for a request to complete.
-
-Example:
-
-```
-Request started
-      |
-      |
-Response received
-
-Latency = 15ms
-```
-
----
-
-### Throughput
-
-The amount of traffic processed by the system.
-
-Example:
-
-```
-500 requests / second
-```
-
----
-
-### Error Rate
-
-Percentage of failed requests.
-
-Example:
-
-```
-Requests: 10000
-
-Successful: 9980
-Failed: 20
-
-Error rate: 0.2%
-```
-
----
-
-# 🛠️ Tech Stack
-
-## Backend
-
-* Go
-* Standard HTTP library
-* Goroutines
-* Channels
-
-## Planned
-
-* React dashboard
-* WebSocket-based monitoring
-* Persistent test history
-* Distributed workers
-
----
-
-# ⚙️ Getting Started
-
-## Requirements
+### Requirements
 
 * Go 1.22+
 
----
-
-## Clone the repository
+### Clone
 
 ```bash
 git clone https://github.com/gabriellim314/loadforge.git
-
 cd loadforge
 ```
 
----
-
-# Running the Target API
-
-Start the testing environment:
+### 1. Start the Target API
 
 ```bash
 go run ./app/target-api/cmd/server
 ```
 
-Expected output:
+Expected:
 
 ```
-🚀 Target API running on :8080
+🚀 Target API running on :8000
 ```
 
-Test:
+Smoke test:
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:8000/health
 ```
 
-Response:
+### 2. Run the load engine
 
-```
-OK
-```
-
----
-
-# Running LoadForge
-
-Start the load engine:
+In another terminal:
 
 ```bash
 go run ./app/load-engine/cmd/runner
 ```
 
+Default config (hardcoded in `cmd/runner` for now):
+
+* URL: `http://localhost:8000/health`
+* Total requests: `100`
+* Concurrency: `10`
+* Per-request timeout: `5s`
+
 Example output:
 
 ```
-Starting load test...
+Total Requests: 100
+Successes: 100
+Failures: 0
+Average Latency: 1.24ms
+Success Rate: 100.00%
+Status Code Stats: map[200:100]
+RPS: 7545.15
+Duration: 13.25ms
+```
 
-Requests: 1000
-Successful: 1000
-Failed: 0
+Optional race check while developing:
 
-Average latency:
-12ms
+```bash
+go run -race ./app/load-engine/cmd/runner
 ```
 
 ---
 
-# 📊 Future Roadmap
+## Roadmap
 
-## Phase 1 — Core Engine
+Aligned with the project stages:
 
-* [x] HTTP requests
-* [x] Latency measurement
-* [ ] Concurrent workers
-* [x] Metrics collector
+### Stage 1 — MVP (in progress)
 
-## Phase 2 — Advanced Load Testing
+* [x] Target API
+* [x] HTTP client with latency
+* [x] Concurrent worker (bounded concurrency)
+* [x] Context + per-request timeout
+* [x] Thread-safe metrics (totals, status codes, duration, RPS)
+* [ ] Percentiles (p50 / p95 / p99)
+* [ ] Configurable run (CLI flags: URL, count, concurrency, timeout)
+* [ ] Thin backend API to start tests and return results
+* [ ] Minimal frontend to create a test and view results
 
-* [ ] Virtual users
-* [ ] RPS control
-* [ ] Custom scenarios
-* [ ] Test configurations
+### Stage 2 — Multiple workers
 
-## Phase 3 — Platform
+Distribute one test across several workers; clear split between control, execution, and metrics aggregation.
 
-* [ ] Web dashboard
-* [ ] Historical reports
-* [ ] Authentication
-* [ ] Cloud execution
+### Stage 3 — Docker
 
-## Phase 4 — Distributed Testing
+Containerize backend, worker, and target API so workers can run independently.
 
-* [ ] Multiple load generators
-* [ ] Kubernetes support
-* [ ] Large-scale simulations
+### Stage 4 — Kubernetes
 
----
+Dynamic worker lifecycle, resource limits, horizontal scale — only after multi-worker + Docker are real.
 
-# 🎯 Motivation
+### Stage 5 — Queue (e.g. RabbitMQ)
 
-Modern applications need to handle unpredictable traffic, and understanding system limits is a fundamental part of building reliable software.
-
-LoadForge was created to study and implement:
-
-* Backend engineering
-* Distributed systems
-* Network programming
-* Performance optimization
-* Cloud infrastructure concepts
-
-The project aims to evolve into a complete performance testing platform built with modern engineering principles.
+Decouple backend from workers for job distribution and failure handling at larger scale.
 
 ---
 
-# 📄 License
+## Design principles
+
+* Correctness and stability before raw performance
+* No unbounded goroutine-per-request without a concurrency limit
+* Prefer simple, testable Go stdlib solutions
+* Do not introduce Docker / K8s / queues before Stage 1 is solid
+
+---
+
+## License
 
 MIT License
 
----
-
-# 👨‍💻 Author
+## Author
 
 **Gabriel Lima**
 
 Software Engineer | Electrical Engineering Student
-
-Building systems at the intersection of software, infrastructure, and performance engineering.
