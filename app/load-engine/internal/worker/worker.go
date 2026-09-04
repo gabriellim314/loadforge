@@ -13,6 +13,7 @@ type Config struct {
 	URL string
 	Concurrency int
 	TotalRequests int
+	Timeout time.Duration
 }
 
 func Run(config Config, collector *metrics.Metrics) error {
@@ -30,7 +31,7 @@ func Run(config Config, collector *metrics.Metrics) error {
 			defer wg.Done()
 			defer func() { <-semaphore }()
 
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
 			defer cancel()
 
 			result := httpClient.SendRequest(ctx)
