@@ -31,11 +31,11 @@ Target API        →  ✅ minimal /health server
   * status code distribution
   * test duration (wall clock)
   * RPS
+* ✅ Percentiles (p50 / p95 / p99)
+* ✅ CLI flags (URL, count, concurrency still hardcoded in the runner)
 
 ### Not yet
 
-* 🔴 Percentiles (p50 / p95 / p99)
-* 🔴 CLI flags (URL, count, concurrency still hardcoded in the runner)
 * 🔴 Duration-based tests (only total request count)
 * 🔴 Backend control API
 * 🔴 Result persistence / database
