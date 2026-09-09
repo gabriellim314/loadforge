@@ -151,8 +151,8 @@ Aligned with the project stages:
 * [x] Concurrent worker (bounded concurrency)
 * [x] Context + per-request timeout
 * [x] Thread-safe metrics (totals, status codes, duration, RPS)
-* [ ] Percentiles (p50 / p95 / p99)
-* [ ] Configurable run (CLI flags: URL, count, concurrency, timeout)
+* [x] Percentiles (p50 / p95 / p99)
+* [x] Configurable run (CLI flags: URL, count, concurrency, timeout)
 * [ ] Thin backend API to start tests and return results
 * [ ] Minimal frontend to create a test and view results
 
